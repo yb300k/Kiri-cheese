@@ -346,12 +346,12 @@ if __name__ == "__main__":
     # for postgres connection
     urlparse.uses_netloc.append("postgres")
     url = urlparse.urlparse(os.environ.get("DATABASE_URL",'postgresql://ユーザー名@localhost/データベース名'))
-        self.conn = psycopg2.connect(
-            database=url.path[1:],
-    	    user=url.username,
-    	    password=url.password,
-    	    host=url.hostname,
-            port=url.port
-    	) 
+    self.conn = psycopg2.connect(
+        database=url.path[1:],
+        user=url.username,
+        password=url.password,
+        host=url.hostname,
+        port=url.port
+    ) 
     
     app.run(debug=options.debug, port=options.port)
