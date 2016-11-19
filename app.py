@@ -2,13 +2,14 @@
 
 from __future__ import unicode_literals
 
+import base64
 import errno
 import os
 import sys
 import tempfile
 from argparse import ArgumentParser
 
-from flask import Flask, request, abort
+from flask import Flask, request, abort, logging, send_from_directory
 
 from linebot import (
     LineBotApi, WebhookHandler
@@ -24,23 +25,15 @@ from linebot.models import (
     CarouselTemplate, CarouselColumn, PostbackEvent,
     StickerMessage, StickerSendMessage, LocationMessage, LocationSendMessage,
     ImageMessage, VideoMessage, AudioMessage,
-    UnfollowEvent, FollowEvent, JoinEvent, LeaveEvent, BeaconEvent
+    UnfollowEvent, FollowEvent, JoinEvent, LeaveEvent, BeaconEvent,
+    ImagemapSendMessage, MessageImagemapAction, BaseSize, ImagemapArea
 )
 
 app = Flask(__name__)
+app.config.from_object('config')
 
-# get channel_secret and channel_access_token from your environment variable
-channel_secret = os.getenv('LINE_CHANNEL_SECRET', None)
-channel_access_token = os.getenv('LINE_CHANNEL_ACCESS_TOKEN', None)
-if channel_secret is None:
-    print('Specify LINE_CHANNEL_SECRET as environment variable.')
-    sys.exit(1)
-if channel_access_token is None:
-    print('Specify LINE_CHANNEL_ACCESS_TOKEN as environment variable.')
-    sys.exit(1)
-
-line_bot_api = LineBotApi(channel_access_token)
-handler = WebhookHandler(channel_secret)
+line_bot_api = LineBotApi(app.config['CHANNEL_ACCESS_TOKEN'])
+handler = WebhookHandler(app.config['CHANNEL_SECRET'])
 
 static_tmp_path = os.path.join(os.path.dirname(__file__), 'static', 'tmp')
 
@@ -73,6 +66,10 @@ def callback():
 
     return 'OK'
 
+@app.route('/planning_poker/images/<size>', methods=['GET'])
+def images(size):
+    app.logger.info(size)
+    return send_from_directory("static/planning_poker/", "pp-" + size +".png")
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_text_message(event):
@@ -95,6 +92,90 @@ def handle_text_message(event):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextMessage(text="Bot can't use profile API without user ID"))
+    elif text == 'プラポ':
+        imagemap_message = ImagemapSendMessage(
+            base_url='https://scrummasterbot.herokuapp.com/planning_poker/images',
+            alt_text='this is planning poker',
+            base_size=BaseSize(height=790, width=1040),
+            actions=[
+                MessageImagemapAction(
+                    text='selected_0',
+                    area=ImagemapArea(
+                        x=0, y=0, width=260, height=260
+                    )
+                ),
+                MessageImagemapAction(
+                    text='selected_1',
+                    area=ImagemapArea(
+                        x=260, y=0, width=515, height=260
+                    )
+                ),
+                MessageImagemapAction(
+                    text='selected_2',
+                    area=ImagemapArea(
+                        x=520, y=0, width=770, height=260
+                    )
+                ),
+                MessageImagemapAction(
+                    text='selected_3',
+                    area=ImagemapArea(
+                        x=720, y=0, width=1040, height=260
+                    )
+                ),
+                MessageImagemapAction(
+                    text='selected_4',
+                    area=ImagemapArea(
+                        x=0, y=260, width=260, height=520
+                    )
+                ),
+                MessageImagemapAction(
+                    text='selected_5',
+                    area=ImagemapArea(
+                        x=260, y=260, width=515, height=520
+                    )
+                ),
+                MessageImagemapAction(
+                    text='selected_6',
+                    area=ImagemapArea(
+                        x=520, y=260, width=770, height=520
+                    )
+                ),
+                MessageImagemapAction(
+                    text='selected_7',
+                    area=ImagemapArea(
+                        x=720, y=260, width=1040, height=520
+                    )
+                ),
+                MessageImagemapAction(
+                    text='selected_8',
+                    area=ImagemapArea(
+                        x=0, y=520, width=260, height=790
+                    )
+                ),
+                MessageImagemapAction(
+                    text='selected_9',
+                    area=ImagemapArea(
+                        x=260, y=520, width=515, height=790
+                    )
+                ),
+                MessageImagemapAction(
+                    text='selected_10',
+                    area=ImagemapArea(
+                        x=520, y=520, width=770, height=790
+                    )
+                ),
+                MessageImagemapAction(
+                    text='selected_11',
+                    area=ImagemapArea(
+                        x=720, y=520, width=1040, height=790
+                    )
+                )
+            ]
+        )
+        line_bot_api.reply_message(
+            event.reply_token,
+            imagemap_message)
+
     elif text == 'bye':
         if isinstance(event.source, SourceGroup):
             line_bot_api.reply_message(
@@ -150,6 +231,9 @@ def handle_text_message(event):
     elif text == 'imagemap':
         pass
     else:
+        #analyzer = MorphologicalAnalyzer()
+        #line_bot_api.reply_message(
+        #    event.reply_token, TextSendMessage(text=analyzer.analyze(event.message.text.encode('utf-8'))))
         line_bot_api.reply_message(
             event.reply_token, TextSendMessage(text=event.message.text))
 
@@ -233,7 +317,6 @@ def handle_postback(event):
         line_bot_api.reply_message(
             event.reply_token, TextSendMessage(text='pong'))
 
-
 @handler.add(BeaconEvent)
 def handle_beacon(event):
     line_bot_api.reply_message(
@@ -246,7 +329,7 @@ if __name__ == "__main__":
         usage='Usage: python ' + __file__ + ' [--port <port>] [--help]'
     )
     arg_parser.add_argument('-p', '--port', default=8000, help='port')
-    arg_parser.add_argument('-d', '--debug', default=False, help='debug')
+    arg_parser.add_argument('-d', '--debug', default=True, help='debug')
     options = arg_parser.parse_args()
 
     # create tmp dir for download content
