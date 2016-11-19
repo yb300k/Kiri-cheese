@@ -187,7 +187,7 @@ def handle_text_message(event):
             port=url.port
         ) 
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("create table user_answer(groupid text,userid text,username text,answer text);")
+        cur.execute("insert into user_answer values('test_group_id','test_user_id','ユーザー名','answer');")
         
         line_bot_api.reply_message(
             event.reply_token,
