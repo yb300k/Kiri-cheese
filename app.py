@@ -178,14 +178,14 @@ def handle_text_message(event):
 
         # for postgres connection
         urlparse.uses_netloc.append("postgres")
-        url = urlparse.urlparse(os.environ.get("DATABASE_URL",'postgresql://ユーザー名@localhost/データベース名'))
+        url = urlparse.urlparse(os.getenv('DATABASE_URL', None))
         conn = psycopg2.connect(
             database=url.path[1:],
             user=url.username,
             password=url.password,
             host=url.hostname,
             port=url.port
-        ) 
+        )
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cur.execute("insert into user_answer values('test_group_id','test_user_id','ユーザー名','answer');")
         
