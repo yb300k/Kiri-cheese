@@ -175,7 +175,17 @@ def handle_text_message(event):
                 )
             ]
         )
-        # 
+
+        # for postgres connection
+        urlparse.uses_netloc.append("postgres")
+        url = urlparse.urlparse(os.environ.get("DATABASE_URL",'postgresql://ユーザー名@localhost/データベース名'))
+        self.conn = psycopg2.connect(
+            database=url.path[1:],
+            user=url.username,
+            password=url.password,
+            host=url.hostname,
+            port=url.port
+        ) 
         conn = self.application.conn 
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cur.execute("create table user_answer(groupid text,userid text,username text,answer text);")
@@ -342,16 +352,5 @@ if __name__ == "__main__":
 
     # create tmp dir for download content
     make_static_tmp_dir()
-    
-    # for postgres connection
-    urlparse.uses_netloc.append("postgres")
-    url = urlparse.urlparse(os.environ.get("DATABASE_URL",'postgresql://ユーザー名@localhost/データベース名'))
-    self.conn = psycopg2.connect(
-        database=url.path[1:],
-        user=url.username,
-        password=url.password,
-        host=url.hostname,
-        port=url.port
-    ) 
     
     app.run(debug=options.debug, port=options.port)
