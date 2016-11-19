@@ -188,6 +188,7 @@ def handle_text_message(event):
         )
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cur.execute("insert into user_answer values('test_group_id','test_user_id','ユーザー名','answer');")
+        conn.commit()
         
         line_bot_api.reply_message(
             event.reply_token,
